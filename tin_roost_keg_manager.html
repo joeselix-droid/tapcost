@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tin Roost — Keg Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0c09;
+    --surface: #1a1710;
+    --surface2: #242018;
+    --border: #2e2a20;
+    --amber: #e8a020;
+    --amber-dim: #a06c10;
+    --amber-glow: rgba(232,160,32,0.12);
+    --green: #4caf7d;
+    --green-dim: rgba(76,175,125,0.15);
+    --red: #e05c5c;
+    --red-dim: rgba(224,92,92,0.15);
+    --text: #e8e0d0;
+    --text-muted: #7a7060;
+    --text-dim: #4a4438;
+    --hh-accent: #7cb8e8;
+    --hh-dim: rgba(124,184,232,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--amber);
+  }
+  .logo span { color: var(--text-muted); font-size: 13px; font-family: 'DM Mono', monospace; letter-spacing: 1px; margin-left: 12px; vertical-align: middle; }
+
+  nav { display: flex; gap: 4px; }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  nav button:hover { color: var(--text); background: var(--border); }
+  nav button.active { color: var(--amber); background: var(--amber-glow); }
+
+  /* MAIN LAYOUT */
+  main { padding: 32px; max-width: 1400px; margin: 0 auto; }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 1px;
+    color: var(--amber);
+    line-height: 1;
+  }
+  .stat-value.good { color: var(--green); }
+  .stat-value.bad { color: var(--red); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 240px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-box:focus { border-color: var(--amber-dim); }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  select.filter-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #f0b030; }
+  .btn.secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn.secondary:hover { border-color: var(--amber-dim); color: var(--amber); }
+  .btn.danger { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+
+  /* KEG TABLE */
+  .keg-table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:hover td { background: var(--surface); }
+  tr:last-child td { border-bottom: none; }
+
+  .beer-name { font-weight: 500; color: var(--text); }
+  .beer-dist { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .cost-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .cost-pct.good { background: var(--green-dim); color: var(--green); }
+  .cost-pct.warn { background: rgba(232,160,32,0.15); color: var(--amber); }
+  .cost-pct.bad { background: var(--red-dim); color: var(--red); }
+
+  .hh-badge {
+    background: var(--hh-dim);
+    color: var(--hh-accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  .price-input {
+    width: 70px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.1s;
+  }
+  .price-input:focus { border-color: var(--amber-dim); background: var(--surface); }
+  .price-input.changed { border-color: var(--amber); color: var(--amber); }
+
+  .keg-price-input {
+    width: 85px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+    outline: none;
+  }
+  .keg-price-input:focus { border-color: var(--amber-dim); background: var(--surface); }
+
+  .on-hand-input {
+    width: 65px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+    outline: none;
+  }
+  .on-hand-input:focus { border-color: var(--amber-dim); }
+  .on-hand-input.low { border-color: var(--red); color: var(--red); }
+
+  .edit-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.1s;
+    letter-spacing: 0.5px;
+  }
+  .edit-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    width: 560px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    color: var(--amber);
+    margin-bottom: 24px;
+  }
+  .form-row {
+    margin-bottom: 16px;
+  }
+  .form-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--amber-dim); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 28px; justify-content: flex-end; }
+
+  .price-grid-modal {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  /* INSIGHTS VIEW */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .insight-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .insight-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .insight-row:last-child { border-bottom: none; }
+  .insight-bar-wrap { margin-top: 8px; }
+  .insight-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .insight-bar-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .insight-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  /* HAPPY HOUR section */
+  .hh-section {
+    background: var(--hh-dim);
+    border: 1px solid rgba(124,184,232,0.2);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .hh-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .hh-dot { width: 8px; height: 8px; background: var(--hh-accent); border-radius: 50%; }
+  .hh-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--hh-accent);
+  }
+  .hh-desc { font-size: 12px; color: var(--text-muted); }
+
+  /* Target indicator */
+  .target-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--green-dim);
+    border: 1px solid rgba(76,175,125,0.2);
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--green);
+    white-space: nowrap;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .big { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--green);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Price suggestion chip */
+  .suggest-btn {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    background: var(--amber-glow);
+    color: var(--amber);
+    border: 1px dashed var(--amber-dim);
+    border-radius: 3px;
+    padding: 2px 5px;
+    cursor: pointer;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .suggest-btn:hover { background: rgba(232,160,32,0.2); }
+
+  .qty-sold-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="logo">TIN ROOST <span>KEG MANAGER</span></div>
+  </div>
+  <nav>
+    <button class="active" onclick="setView('pricing')">Pricing</button>
+    <button onclick="setView('inventory')">Inventory</button>
+    <button onclick="setView('insights')">Insights</button>
+  </nav>
+  <div class="target-line">
+    <span>▶</span> TARGET: 25% COST
+  </div>
+</header>
+
+<main>
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- PRICING VIEW -->
+  <div class="view active" id="view-pricing">
+    <div class="hh-section">
+      <div class="hh-header">
+        <div class="hh-dot"></div>
+        <div class="hh-title">Happy Hour Active — Mon–Fri 3–6 PM</div>
+      </div>
+      <div class="hh-desc">Half-barrel kegs (1,984 oz) eligible for 2-for-1 pricing. HH pour size is 12 oz. Blue tags indicate HH-eligible drafts below.</div>
+    </div>
+
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="Search beers..." oninput="filterTable()" id="searchBox">
+      <select class="filter-select" onchange="filterTable()" id="filterDist">
+        <option value="">All Distributors</option>
+      </select>
+      <select class="filter-select" onchange="filterTable()" id="filterCost">
+        <option value="">All Cost %</option>
+        <option value="good">On Target (&lt;25%)</option>
+        <option value="warn">Near Target (25–30%)</option>
+        <option value="bad">Over Target (&gt;30%)</option>
+      </select>
+      <button class="btn secondary" onclick="exportCSV()">↓ Export</button>
+      <button class="btn" onclick="openAddModal()">+ Add Keg</button>
+    </div>
+
+    <div class="keg-table-wrap">
+      <table id="pricingTable">
+        <thead>
+          <tr>
+            <th>Beer</th>
+            <th>Keg Cost</th>
+            <th>Size</th>
+            <th>9 oz</th>
+            <th>12 oz</th>
+            <th>16 oz</th>
+            <th>25 oz</th>
+            <th>HH Cost%<br><span style="font-size:9px;color:var(--text-dim)">(12oz 2for1)</span></th>
+            <th>Best Cost%</th>
+            <th>90-Day Sales</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pricingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INVENTORY VIEW -->
+  <div class="view" id="view-inventory">
+    <div class="section-header">
+      <div class="section-title">Keg Inventory</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" onclick="markAllZero()">Reset All</button>
+        <button class="btn" onclick="saveInventory()">Save Inventory</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="Search..." oninput="filterInventory()" id="invSearchBox">
+      <select class="filter-select" onchange="filterInventory()" id="filterInvDist">
+        <option value="">All Distributors</option>
+      </select>
+    </div>
+    <div class="keg-table-wrap">
+      <table id="inventoryTable">
+        <thead>
+          <tr>
+            <th>Beer</th>
+            <th>Distributor</th>
+            <th>Keg Size</th>
+            <th>Keg Cost</th>
+            <th>On Hand (kegs)</th>
+            <th>Inventory Value</th>
+            <th>Reorder?</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSIGHTS VIEW -->
+  <div class="view" id="view-insights">
+    <div id="insightsContent"></div>
+  </div>
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add New Keg</div>
+    <div class="form-grid">
+      <div class="form-row" style="grid-column:1/-1">
+        <label class="form-label">Beer Name</label>
+        <input class="form-input" id="fName" type="text" placeholder="e.g. Field Day Featherweight Lime">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Distributor</label>
+        <input class="form-input" id="fDist" type="text" placeholder="e.g. 7G">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Keg Cost ($)</label>
+        <input class="form-input" id="fKegPrice" type="number" step="0.01" placeholder="180.00">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Keg Size (oz)</label>
+        <select class="form-input" id="fKegSize">
+          <option value="1984">1/2 Barrel — 1,984 oz (HH eligible)</option>
+          <option value="992">1/4 Barrel — 992 oz</option>
+          <option value="660">1/6 Barrel — 660 oz</option>
+          <option value="845">Lambic — 845 oz</option>
+          <option value="1690">Corny Keg — 1,690 oz</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:16px">
+      <label class="form-label">Pour Prices ($)</label>
+      <div class="price-grid-modal">
+        <div>
+          <label class="form-label">9 oz</label>
+          <input class="form-input" id="fP9" type="number" step="0.25" placeholder="—">
+        </div>
+        <div>
+          <label class="form-label">12 oz</label>
+          <input class="form-input" id="fP12" type="number" step="0.25" placeholder="—">
+        </div>
+        <div>
+          <label class="form-label">16 oz</label>
+          <input class="form-input" id="fP16" type="number" step="0.25" placeholder="—">
+        </div>
+        <div>
+          <label class="form-label">25 oz</label>
+          <input class="form-input" id="fP25" type="number" step="0.25" placeholder="—">
+        </div>
+      </div>
+    </div>
+    <div id="modalCostPreview" style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:6px;font-family:'DM Mono',monospace;font-size:12px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn danger" id="deleteBtn" onclick="deleteKeg()" style="display:none;">Delete</button>
+      <button class="btn" onclick="saveKeg()">Save Keg</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────
+const RAW_KEGS = [{"name":"Old Fashioned","distributor":"TR","kegPrice":0,"kegSize":1984,"isHHEligible":true,"prices":{},"onHand":0},{"name":"Espresso Martini","distributor":"TR","kegPrice":0,"kegSize":660,"isHHEligible":false,"prices":{},"onHand":0},{"name":"Mojito","distributor":"TR","kegPrice":0,"kegSize":660,"isHHEligible":false,"prices":{"9":8.5,"12":10.5},"onHand":0},{"name":"Margarita","distributor":"TR","kegPrice":0,"kegSize":660,"isHHEligible":false,"prices":{"9":7,"12":9},"onHand":0},{"name":"Caramel Applie Pie Drips","distributor":"Barn Town","kegPrice":129,"kegSize":660,"isHHEligible":false,"prices":{"9":7,"12":8.5},"onHand":0},{"name":"over the ivy pilsner","distributor":"Confluence","kegPrice":170,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5,"16":6},"onHand":0},{"name":"Exile, Bohemian Pink Guava, Fruited Sour 4.8%","distributor":"7G","kegPrice":270,"kegSize":1984,"isHHEligible":true,"prices":{"9":6,"12":7,"16":8},"onHand":0},{"name":"Field Day Shearing Hazy IPA 7.8%","distributor":"7G","kegPrice":126,"kegSize":660,"isHHEligible":false,"prices":{"9":6.5,"12":8},"onHand":0},{"name":"ADV Pleased as Pie Peach","distributor":"Confluence","kegPrice":122,"kegSize":660,"isHHEligible":false,"prices":{"9":7,"12":9},"onHand":0},{"name":"Alma Mater","distributor":"Pulpit Rock","kegPrice":225,"kegSize":1984,"isHHEligible":true,"prices":{"12":5.5,"16":7},"onHand":0},{"name":"Clockhouse Witch Slap Hazy IPA 6%","distributor":"Keg1","kegPrice":235,"kegSize":1984,"isHHEligible":true,"prices":{"12":6,"16":7.5},"onHand":0},{"name":"Golden Road Mango Cart","distributor":"7G","kegPrice":82,"kegSize":660,"isHHEligible":false,"prices":{"9":4.5,"12":5.5,"16":7},"onHand":0},{"name":"BTO amber bock","distributor":"Pulpit Rock","kegPrice":225,"kegSize":1984,"isHHEligible":true,"prices":{"9":4.5,"12":5.5,"16":7},"onHand":0},{"name":"Sierra Nevada Pils 4.7%","distributor":"7G","kegPrice":120,"kegSize":1984,"isHHEligible":true,"prices":{"9":3,"12":4,"16":5,"25":7},"onHand":0},{"name":"Warpigs Foggy Geezer Hazy IPA 7.3%","distributor":"Doll's","kegPrice":210,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5,"16":6},"onHand":0},{"name":"Field Day Featherweight Lime, Lager 4.3%","distributor":"7G","kegPrice":180,"kegSize":1984,"isHHEligible":true,"prices":{"12":5,"16":7},"onHand":0},{"name":"Lion Bridget Comfy Pants English Ale 7.2%","distributor":"7G","kegPrice":175,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5,"16":6},"onHand":0},{"name":"Grandma Charlotte's Lemon Meringue Pie","distributor":"Confluence","kegPrice":325,"kegSize":1984,"isHHEligible":true,"prices":{"9":6,"12":7.5},"onHand":0},{"name":"LionBridge TAG Tangerine Fruited Wheat Beer 4.2%","distributor":"7G","kegPrice":175,"kegSize":1984,"isHHEligible":true,"prices":{"12":5,"16":6,"25":8.5},"onHand":0},{"name":"Field Day Bromance","distributor":"7G","kegPrice":180,"kegSize":1984,"isHHEligible":true,"prices":{"12":5,"16":6},"onHand":0},{"name":"Lindemans Framboise (Raspberry Lambic) 2.5%","distributor":"7G","kegPrice":75,"kegSize":845,"isHHEligible":false,"prices":{"9":4,"12":5},"onHand":0},{"name":"French Toast Cider 6.2%","distributor":"JackedUp","kegPrice":135,"kegSize":660,"isHHEligible":false,"prices":{"9":6.5,"12":8.5},"onHand":0},{"name":"Hopaveli","distributor":"Dimensional","kegPrice":100,"kegSize":660,"isHHEligible":false,"prices":{"9":6,"12":7},"onHand":0},{"name":"Millstream Knee High Hefeweizen","distributor":"7G","kegPrice":95,"kegSize":660,"isHHEligible":false,"prices":{"9":6,"12":7,"16":8.5},"onHand":0},{"name":"Big Grove Color TV 8.3%","distributor":"7G","kegPrice":247,"kegSize":1984,"isHHEligible":true,"prices":{"9":5,"12":6,"16":7.5},"onHand":0},{"name":"Big Grove Neighborhood Beer 4.5%","distributor":"7G","kegPrice":155,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5,"16":7,"25":10},"onHand":0},{"name":"Big Grove Citrus Surfer Wheat 4.8%","distributor":"7G","kegPrice":162,"kegSize":1984,"isHHEligible":true,"prices":{"12":5,"16":6.5},"onHand":0},{"name":"Big Grove Easy Eddy Hazy IPA 6%","distributor":"7G","kegPrice":210,"kegSize":1984,"isHHEligible":true,"prices":{"12":6,"16":7.5},"onHand":0},{"name":"Blue Moon Witbier 5.5%","distributor":"Keg1","kegPrice":170,"kegSize":1984,"isHHEligible":true,"prices":{"12":4.5,"16":6.5,"25":9},"onHand":0},{"name":"Busch Light Lager 4.1%","distributor":"7G","kegPrice":125,"kegSize":1984,"isHHEligible":true,"prices":{"12":4,"16":5.5,"25":8},"onHand":0},{"name":"Yuengling Flight","distributor":"7G","kegPrice":148,"kegSize":1984,"isHHEligible":true,"prices":{"12":4,"16":5.5,"25":8},"onHand":0},{"name":"Yuengling Traditional Lager","distributor":"7G","kegPrice":162,"kegSize":1984,"isHHEligible":true,"prices":{"12":4,"16":6,"25":8.5},"onHand":0},{"name":"Michelob Ultra","distributor":"7G","kegPrice":195,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5.5,"16":7},"onHand":0},{"name":"Modelo Especial","distributor":"7G","kegPrice":190,"kegSize":1690,"isHHEligible":false,"prices":{"9":5,"12":5.5,"16":8},"onHand":0},{"name":"Peace Tree Red Rambler","distributor":"7G","kegPrice":189,"kegSize":1984,"isHHEligible":true,"prices":{"9":4,"12":5,"16":6},"onHand":0},{"name":"Pulpit Rock Alma Mater","distributor":"Pulpit Rock","kegPrice":225,"kegSize":1984,"isHHEligible":true,"prices":{"12":5.5,"16":7},"onHand":0},{"name":"Big Grove Double Blackberry Sour","distributor":"7G","kegPrice":247,"kegSize":1984,"isHHEligible":true,"prices":{"9":5,"12":6,"16":7},"onHand":0}];
+
+const SALES_DATA = {"NoCoast Pecan Sticky Buns":{"qtySold":55,"avgPrice":7.28,"netSales":400.5,"discountAmount":0},"Adventurous Pleased as Pie Peach":{"qtySold":21,"avgPrice":4.86,"netSales":102,"discountAmount":0},"Barn Town Scotcharoo Dessert Sour":{"qtySold":32,"avgPrice":6.09,"netSales":195,"discountAmount":0},"Barn Town Cotton Candy":{"qtySold":68,"avgPrice":6.13,"netSales":416.5,"discountAmount":0},"Barn Town Strawberry Banana Massacre Sour":{"qtySold":66,"avgPrice":6.6,"netSales":416.8,"discountAmount":18.7},"Barn Town Grape PBnJ":{"qtySold":63,"avgPrice":6.94,"netSales":422.88,"discountAmount":14.12},"Barn Town Caramel Apple Pie Drips":{"qtySold":59,"avgPrice":5.97,"netSales":337.14,"discountAmount":14.86},"Big Grove Citrus Surfer":{"qtySold":352,"avgPrice":6.29,"netSales":2159.07,"discountAmount":54.94},"Big Grove Color TV":{"qtySold":24,"avgPrice":6.94,"netSales":162.52,"discountAmount":3.98},"Big Grove Double Blackberry Sour":{"qtySold":231,"avgPrice":7.07,"netSales":1623.2,"discountAmount":9.8},"Big Grove Easy Eddy":{"qtySold":614,"avgPrice":7.39,"netSales":4453.49,"discountAmount":82.51},"Big Grove Neighborhood Beer":{"qtySold":402,"avgPrice":6.94,"netSales":2755.95,"discountAmount":34.05},"Blue Moon":{"qtySold":282,"avgPrice":6.64,"netSales":1856,"discountAmount":15.5},"Busch Light":{"qtySold":668,"avgPrice":6.18,"netSales":3855.09,"discountAmount":271.91},"Clockhouse Witch Slap":{"qtySold":509,"avgPrice":7.79,"netSales":3938.23,"discountAmount":25.78},"Confluence Grandma Charlotte's Lemon Meringue Pie":{"qtySold":55,"avgPrice":3.03,"netSales":166.5,"discountAmount":0},"Confluence Over the Ivy":{"qtySold":23,"avgPrice":5.87,"netSales":134.6,"discountAmount":0.4},"Modelo Especial":{"qtySold":142,"avgPrice":6.41,"netSales":875.2,"discountAmount":34.8},"Exile Pink Guava Bohemian":{"qtySold":58,"avgPrice":5.71,"netSales":323,"discountAmount":8},"Field Day Humble Roots":{"qtySold":44,"avgPrice":5.97,"netSales":262.5,"discountAmount":0},"Field Day Ruby AF":{"qtySold":5,"avgPrice":6.8,"netSales":34,"discountAmount":0},"Field Day Bromance":{"qtySold":170,"avgPrice":6.34,"netSales":1072,"discountAmount":5},"Field Day Czech Amber (Slow Pour)":{"qtySold":23,"avgPrice":6.2,"netSales":142.5,"discountAmount":0},"Field Day Czech Dark Lager (Slow Pour)":{"qtySold":112,"avgPrice":6.08,"netSales":659.5,"discountAmount":21},"Field Day Featherweight":{"qtySold":49,"avgPrice":4.96,"netSales":235,"discountAmount":8},"Field Day Featherweight Lime":{"qtySold":53,"avgPrice":5.02,"netSales":266,"discountAmount":0},"Field Day Spare Parts":{"qtySold":14,"avgPrice":6.39,"netSales":89.5,"discountAmount":0},"Field Day Shearing Sheep":{"qtySold":44,"avgPrice":6.59,"netSales":282,"discountAmount":8},"Golden Road Mango Cart":{"qtySold":8,"avgPrice":6.13,"netSales":49,"discountAmount":0},"Reunion Skelenaut PB Stout":{"qtySold":136,"avgPrice":4.9,"netSales":665.3,"discountAmount":1.2},"JACKED UP: French Toast Cider":{"qtySold":56,"avgPrice":4.83,"netSales":262,"discountAmount":8.5},"Lindemans Raspberry Framboise":{"qtySold":20,"avgPrice":3.15,"netSales":63,"discountAmount":0},"Pulpit Salty Dog":{"qtySold":45,"avgPrice":5.29,"netSales":230.4,"discountAmount":7.6},"LionBridge Comfy Pants":{"qtySold":126,"avgPrice":4.8,"netSales":571.93,"discountAmount":33.07},"LionBridge TAG":{"qtySold":55,"avgPrice":5.59,"netSales":295.9,"discountAmount":11.6},"Michelob Ultra":{"qtySold":527,"avgPrice":6.67,"netSales":3393.5,"discountAmount":124},"Field Day Combine Lager":{"qtySold":78,"avgPrice":5.9,"netSales":438.55,"discountAmount":21.45},"Millstream Knee High Hefeweizen":{"qtySold":73,"avgPrice":7.33,"netSales":532.65,"discountAmount":2.35},"JeffCo Cranberry Orange":{"qtySold":100,"avgPrice":5.23,"netSales":518.64,"discountAmount":4.36},"Paha Blood Orange Cider":{"qtySold":129,"avgPrice":5.41,"netSales":674.25,"discountAmount":23.75},"Dimensional Short Rail":{"qtySold":66,"avgPrice":5.76,"netSales":373.4,"discountAmount":6.6},"Peace Tree Red Rambler":{"qtySold":117,"avgPrice":6.06,"netSales":708.2,"discountAmount":1.3},"Pulpit Rock Alma Mater":{"qtySold":129,"avgPrice":6.45,"netSales":819,"discountAmount":12.5},"Wake Brewing Funeral Fog IPA":{"qtySold":52,"avgPrice":7.41,"netSales":385.5,"discountAmount":0},"Yuengling Flight":{"qtySold":207,"avgPrice":4.86,"netSales":994.5,"discountAmount":11.5},"Yuengling Traditional Lager":{"qtySold":199,"avgPrice":4.78,"netSales":943.5,"discountAmount":7.5},"Sierra Nevada Pils":{"qtySold":8,"avgPrice":4.88,"netSales":37.75,"discountAmount":1.25},"Jacked UP: Bourbon Blueberry":{"qtySold":41,"avgPrice":5.93,"netSales":240.05,"discountAmount":2.95},"Toppling Goliath Fire, Skulls & Money":{"qtySold":42,"avgPrice":8.05,"netSales":338,"discountAmount":0},"Field Day Citrus Smurfer":{"qtySold":52,"avgPrice":5.02,"netSales":260.4,"discountAmount":0.6},"SingleSpeed Victory Dance":{"qtySold":115,"avgPrice":5.9,"netSales":677.35,"discountAmount":0.65},"WarPigs Foggy Geezer":{"qtySold":13,"avgPrice":5.46,"netSales":71,"discountAmount":0}};
+
+// HH sales from Toast (rows with "HH" prefix)
+const HH_SALES = {"Big Grove Citrus Surfer":164,"Big Grove Double Blackberry Sour":116,"Big Grove Color TV":9,"Big Grove Easy Eddy":429,"Big Grove Neighborhood Beer":287,"Blue Moon":120,"Busch Light":210,"Field Day Featherweight Lime":50,"Field Day Featherweight":48,"Field Day Bromance":132,"Field Day Combine Lager":39,"Field Day Czech Dark Lager":57,"Field Day Czech Amber":16,"Michelob Ultra":287,"Modelo Especial":48,"Yuengling":141,"Sierra Nevada Pils":10,"Field Day Citrus Smurfer":24,"Field Day Spare Parts":26,"Field Day Humble Roots":57};
+
+let kegs = JSON.parse(localStorage.getItem('tinRoostKegs') || 'null') || RAW_KEGS.map(k => ({...k}));
+let editingIdx = null;
+
+// ── UTILS ────────────────────────────────────────────────────────
+function costPct(kegCost, kegSize, pourSize, salePrice) {
+  if (!kegCost || !salePrice || !kegSize) return null;
+  const costPerOz = kegCost / kegSize;
+  const pourCost = costPerOz * pourSize;
+  return pourCost / salePrice;
+}
+
+function hhCostPct(kegCost, kegSize, salePrice12) {
+  // 2-for-1: customer pays for 1, gets 2 × 12oz. Effective revenue per 12oz = price/2
+  if (!kegCost || !salePrice12 || !kegSize) return null;
+  const costPerOz = kegCost / kegSize;
+  const pourCost = costPerOz * 12;
+  const effectiveRevenue = salePrice12 / 2;
+  return pourCost / effectiveRevenue;
+}
+
+function bestCostPct(keg) {
+  let best = null;
+  for (const [sz, price] of Object.entries(keg.prices)) {
+    const pct = costPct(keg.kegPrice, keg.kegSize, parseInt(sz), price);
+    if (pct !== null && (best === null || pct < best)) best = pct;
+  }
+  return best;
+}
+
+function costClass(pct) {
+  if (pct === null) return '';
+  if (pct <= 0.25) return 'good';
+  if (pct <= 0.30) return 'warn';
+  return 'bad';
+}
+
+function fmt(n, decimals=2) { return n == null ? '—' : '$' + n.toFixed(decimals); }
+function fmtPct(n) { return n == null ? '—' : (n*100).toFixed(1) + '%'; }
+
+// ── SUGGESTED PRICE for 25% cost ────────────────────────────────
+function suggestedPrice(kegCost, kegSize, pourSize, targetPct=0.25) {
+  if (!kegCost || !kegSize) return null;
+  const raw = (kegCost / kegSize * pourSize) / targetPct;
+  return Math.ceil(raw / 0.25) * 0.25; // round up to nearest $0.25
+}
+
+// ── SALES LOOKUP ─────────────────────────────────────────────────
+function getSales(beerName) {
+  // Try exact match first, then fuzzy
+  const name = beerName.toLowerCase();
+  for (const [k, v] of Object.entries(SALES_DATA)) {
+    if (k.toLowerCase().includes(name.split(' ').slice(0,3).join(' ')) ||
+        name.includes(k.toLowerCase().split(' ').slice(0,3).join(' '))) {
+      return v;
+    }
+  }
+  return null;
+}
+
+// ── STATS ────────────────────────────────────────────────────────
+function renderStats() {
+  const kegsWithCost = kegs.filter(k => k.kegPrice > 0);
+  const costs = kegsWithCost.map(k => bestCostPct(k)).filter(Boolean);
+  const avgCost = costs.length ? costs.reduce((a,b)=>a+b,0)/costs.length : 0;
+  const onTarget = costs.filter(c => c <= 0.25).length;
+  const invValue = kegs.reduce((sum, k) => sum + (k.kegPrice * (k.onHand||0)), 0);
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Avg Best Cost %</div>
+      <div class="stat-value ${avgCost <= 0.25 ? 'good' : avgCost <= 0.30 ? '' : 'bad'}">${fmtPct(avgCost)}</div>
+      <div class="stat-sub">Target: 25.0%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">On Target (&lt;25%)</div>
+      <div class="stat-value good">${onTarget}</div>
+      <div class="stat-sub">of ${costs.length} priced kegs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Kegs Tracked</div>
+      <div class="stat-value">${kegs.length}</div>
+      <div class="stat-sub">active lines</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Inventory Value</div>
+      <div class="stat-value">${fmt(invValue, 0).replace('$','$')}</div>
+      <div class="stat-sub">at cost</div>
+    </div>
+  `;
+}
+
+// ── PRICING TABLE ────────────────────────────────────────────────
+function renderPricingTable(data) {
+  const tbody = document.getElementById('pricingBody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="big">NO RESULTS</div><div>Try adjusting your filters</div></div></td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = data.map((keg, _i) => {
+    const idx = kegs.indexOf(keg);
+    const sizes = [9, 12, 16, 25];
+    
+    const priceCells = sizes.map(sz => {
+      const price = keg.prices[sz];
+      const pct = price ? costPct(keg.kegPrice, keg.kegSize, sz, price) : null;
+      const suggest = (!price || pct > 0.25) ? suggestedPrice(keg.kegPrice, keg.kegSize, sz) : null;
+      const suggestHtml = suggest && suggest !== price
+        ? `<span class="suggest-btn" onclick="applyPrice(${idx},${sz},${suggest})" title="Apply suggested price for 25% cost">↑${fmt(suggest,2)}</span>`
+        : '';
+      
+      return `<td>
+        ${price ? `<span class="cost-pct ${costClass(pct)}">${fmtPct(pct)}</span><br>
+        <span style="font-size:12px;font-family:'DM Mono',monospace">${fmt(price,2)}</span>` : '<span style="color:var(--text-dim)">—</span>'}
+        ${suggestHtml}
+      </td>`;
+    }).join('');
+
+    const hhPct = keg.isHHEligible && keg.prices[12]
+      ? hhCostPct(keg.kegPrice, keg.kegSize, keg.prices[12])
+      : null;
+    const bestPct = bestCostPct(keg);
+    const sales = getSales(keg.name);
+    const totalQty = (sales?.qtySold || 0) + Object.values(HH_SALES).reduce((s,v,_) => s, 0);
+    const salesQty = sales?.qtySold || null;
+
+    return `<tr>
+      <td>
+        <div class="beer-name">${keg.name}</div>
+        <div class="beer-dist">${keg.distributor}</div>
+        ${keg.isHHEligible ? '<span class="hh-badge">HH Eligible</span>' : ''}
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px">${keg.kegPrice ? fmt(keg.kegPrice,2) : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted)">${keg.kegSize.toLocaleString()} oz</td>
+      ${priceCells}
+      <td>${hhPct !== null ? `<span class="cost-pct ${costClass(hhPct)}">${fmtPct(hhPct)}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td>${bestPct !== null ? `<span class="cost-pct ${costClass(bestPct)}">${fmtPct(bestPct)}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td>${salesQty !== null ? `<span class="qty-sold-badge">${salesQty} sold</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td><button class="edit-btn" onclick="openEditModal(${idx})">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const dist = document.getElementById('filterDist').value;
+  const cost = document.getElementById('filterCost').value;
+  
+  let filtered = kegs.filter(k => {
+    if (q && !k.name.toLowerCase().includes(q) && !k.distributor.toLowerCase().includes(q)) return false;
+    if (dist && k.distributor !== dist) return false;
+    if (cost) {
+      const best = bestCostPct(k);
+      if (cost === 'good' && (best === null || best > 0.25)) return false;
+      if (cost === 'warn' && (best === null || best <= 0.25 || best > 0.30)) return false;
+      if (cost === 'bad' && (best === null || best <= 0.30)) return false;
+    }
+    return true;
+  });
+  renderPricingTable(filtered);
+}
+
+function applyPrice(idx, size, price) {
+  kegs[idx].prices[size] = price;
+  saveToStorage();
+  filterTable();
+  showToast(`Price updated to ${fmt(price,2)} for ${size}oz`);
+}
+
+// ── INVENTORY TABLE ──────────────────────────────────────────────
+function renderInventoryTable(data) {
+  const tbody = document.getElementById('inventoryBody');
+  tbody.innerHTML = data.map(keg => {
+    const idx = kegs.indexOf(keg);
+    const invValue = keg.kegPrice * (keg.onHand || 0);
+    const isLow = (keg.onHand || 0) <= 1;
+    return `<tr>
+      <td>
+        <div class="beer-name">${keg.name}</div>
+        ${keg.isHHEligible ? '<span class="hh-badge">HH Eligible</span>' : ''}
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">${keg.distributor}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${keg.kegSize.toLocaleString()} oz</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px">${keg.kegPrice ? fmt(keg.kegPrice,2) : '—'}</td>
+      <td>
+        <input type="number" class="on-hand-input ${isLow ? 'low' : ''}" 
+          value="${keg.onHand || 0}" min="0" step="0.5"
+          onchange="updateOnHand(${idx}, this.value)" 
+          data-idx="${idx}">
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px">${invValue ? fmt(invValue,2) : '—'}</td>
+      <td>${isLow ? `<span class="cost-pct bad">Reorder</span>` : `<span style="color:var(--text-muted);font-size:11px">OK</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterInventory() {
+  const q = document.getElementById('invSearchBox').value.toLowerCase();
+  const dist = document.getElementById('filterInvDist').value;
+  let filtered = kegs.filter(k => {
+    if (q && !k.name.toLowerCase().includes(q)) return false;
+    if (dist && k.distributor !== dist) return false;
+    return true;
+  });
+  renderInventoryTable(filtered);
+}
+
+function updateOnHand(idx, val) {
+  kegs[idx].onHand = parseFloat(val) || 0;
+  saveToStorage();
+  renderStats();
+}
+
+function markAllZero() {
+  kegs.forEach(k => k.onHand = 0);
+  saveToStorage();
+  filterInventory();
+  renderStats();
+  showToast('All inventory reset to 0');
+}
+
+function saveInventory() {
+  saveToStorage();
+  showToast('Inventory saved!');
+}
+
+// ── INSIGHTS ─────────────────────────────────────────────────────
+function renderInsights() {
+  const priced = kegs.filter(k => k.kegPrice > 0);
+  const allBestPcts = priced.map(k => ({keg:k, pct: bestCostPct(k)})).filter(x => x.pct !== null);
+  allBestPcts.sort((a,b) => b.pct - a.pct);
+
+  const overTarget = allBestPcts.filter(x => x.pct > 0.25);
+  const onTarget = allBestPcts.filter(x => x.pct <= 0.25);
+
+  // Top sellers by qty
+  const salesArr = Object.entries(SALES_DATA).sort((a,b) => b[1].qtySold - a[1].qtySold).slice(0,10);
+  
+  // HH impact
+  const hhTotal = Object.values(HH_SALES).reduce((a,b)=>a+b,0);
+  const hhKegs = kegs.filter(k => k.isHHEligible);
+
+  const barColors = ['#e8a020','#4caf7d','#7cb8e8','#e05c5c','#a06c10'];
+
+  const topWorstHtml = overTarget.slice(0,10).map((x,i) => {
+    const suggest16 = suggestedPrice(x.keg.kegPrice, x.keg.kegSize, 16);
+    return `<div class="insight-row">
+      <div style="font-size:12px;max-width:260px">${x.keg.name}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="cost-pct bad">${fmtPct(x.pct)}</span>
+        ${suggest16 ? `<span style="font-size:10px;color:var(--text-muted)">→ 16oz needs ${fmt(suggest16,2)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const topSellersHtml = salesArr.map(([name, data]) => {
+    const maxQty = salesArr[0][1].qtySold;
+    const barW = Math.round((data.qtySold / maxQty) * 100);
+    return `<div class="insight-bar-wrap">
+      <div class="insight-bar-label">
+        <span style="font-size:12px">${name.length > 36 ? name.slice(0,36)+'…' : name}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--amber)">${data.qtySold} sold</span>
+      </div>
+      <div class="insight-bar-track">
+        <div class="insight-bar-fill" style="width:${barW}%;background:var(--amber)"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const hhRows = hhKegs.slice(0,8).map(k => {
+    const hhP = k.prices[12] ? hhCostPct(k.kegPrice, k.kegSize, k.prices[12]) : null;
+    const normalP = k.prices[12] ? costPct(k.kegPrice, k.kegSize, 12, k.prices[12]) : null;
+    return `<div class="insight-row">
+      <div style="font-size:12px">${k.name.length > 30 ? k.name.slice(0,30)+'…' : k.name}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:10px;color:var(--text-muted)">Normal:</span>
+        <span class="cost-pct ${costClass(normalP)}">${fmtPct(normalP)}</span>
+        <span style="font-size:10px;color:var(--hh-accent)">2-for-1:</span>
+        <span class="cost-pct ${costClass(hhP)}">${fmtPct(hhP)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('insightsContent').innerHTML = `
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-title">🔴 Kegs Over 25% Cost Target (${overTarget.length})</div>
+        ${overTarget.length ? topWorstHtml : '<div style="color:var(--green);font-size:13px">All kegs on target! 🎉</div>'}
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">📊 Top 10 Draft Sales (Last 90 Days)</div>
+        ${topSellersHtml}
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">🍺 Happy Hour Cost Impact (2-for-1)</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">HH pours sold last 90 days: ~${hhTotal.toLocaleString()}</div>
+        ${hhRows}
+      </div>
+      <div class="insight-card">
+        <div class="insight-title">✅ On Target Kegs (≤25% cost)</div>
+        ${onTarget.slice(0,12).map(x => `<div class="insight-row">
+          <div style="font-size:12px">${x.keg.name.length > 34 ? x.keg.name.slice(0,34)+'…' : x.keg.name}</div>
+          <span class="cost-pct good">${fmtPct(x.pct)}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ── MODAL ────────────────────────────────────────────────────────
+function openAddModal() {
+  editingIdx = null;
+  document.getElementById('modalTitle').textContent = 'Add New Keg';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('fName').value = '';
+  document.getElementById('fDist').value = '';
+  document.getElementById('fKegPrice').value = '';
+  document.getElementById('fKegSize').value = '1984';
+  ['fP9','fP12','fP16','fP25'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modalCostPreview').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function openEditModal(idx) {
+  editingIdx = idx;
+  const k = kegs[idx];
+  document.getElementById('modalTitle').textContent = 'Edit Keg';
+  document.getElementById('deleteBtn').style.display = 'block';
+  document.getElementById('fName').value = k.name;
+  document.getElementById('fDist').value = k.distributor;
+  document.getElementById('fKegPrice').value = k.kegPrice || '';
+  document.getElementById('fKegSize').value = k.kegSize;
+  document.getElementById('fP9').value = k.prices[9] || '';
+  document.getElementById('fP12').value = k.prices[12] || '';
+  document.getElementById('fP16').value = k.prices[16] || '';
+  document.getElementById('fP25').value = k.prices[25] || '';
+  updateModalPreview();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function updateModalPreview() {
+  const kegCost = parseFloat(document.getElementById('fKegPrice').value) || 0;
+  const kegSize = parseFloat(document.getElementById('fKegSize').value) || 1984;
+  if (!kegCost) { document.getElementById('modalCostPreview').style.display = 'none'; return; }
+  
+  const rows = [9,12,16,25].map(sz => {
+    const price = parseFloat(document.getElementById(`fP${sz}`).value);
+    if (!price) return '';
+    const pct = costPct(kegCost, kegSize, sz, price);
+    return `<span style="margin-right:16px">${sz}oz: <span class="${costClass(pct)}" style="color:${pct<=0.25?'var(--green)':pct<=0.30?'var(--amber)':'var(--red)'}">${fmtPct(pct)}</span></span>`;
+  }).filter(Boolean).join('');
+
+  if (rows) {
+    document.getElementById('modalCostPreview').style.display = 'block';
+    document.getElementById('modalCostPreview').innerHTML = '<span style="color:var(--text-muted);margin-right:8px">Cost %:</span>' + rows;
+  }
+}
+
+// Auto-update preview on input
+['fKegPrice','fKegSize','fP9','fP12','fP16','fP25'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateModalPreview);
+});
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingIdx = null;
+}
+
+function saveKeg() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { alert('Beer name required'); return; }
+  
+  const keg = {
+    name,
+    distributor: document.getElementById('fDist').value.trim() || 'Unknown',
+    kegPrice: parseFloat(document.getElementById('fKegPrice').value) || 0,
+    kegSize: parseFloat(document.getElementById('fKegSize').value) || 1984,
+    isHHEligible: parseFloat(document.getElementById('fKegSize').value) === 1984,
+    prices: {},
+    onHand: editingIdx !== null ? kegs[editingIdx].onHand : 0
+  };
+  
+  [9,12,16,25].forEach(sz => {
+    const val = parseFloat(document.getElementById(`fP${sz}`).value);
+    if (val) keg.prices[sz] = val;
+  });
+
+  if (editingIdx !== null) {
+    kegs[editingIdx] = keg;
+  } else {
+    kegs.push(keg);
+  }
+
+  saveToStorage();
+  closeModal();
+  filterTable();
+  renderStats();
+  showToast(editingIdx !== null ? 'Keg updated!' : 'Keg added!');
+}
+
+function deleteKeg() {
+  if (!confirm('Delete this keg?')) return;
+  kegs.splice(editingIdx, 1);
+  saveToStorage();
+  closeModal();
+  filterTable();
+  renderStats();
+  showToast('Keg deleted');
+}
+
+// ── EXPORT ───────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['Beer','Distributor','Keg Cost','Size (oz)','Price 9oz','Cost% 9oz','Price 12oz','Cost% 12oz','Price 16oz','Cost% 16oz','Price 25oz','Cost% 25oz','HH 2for1 Cost%','Best Cost%']];
+  kegs.forEach(k => {
+    const p = (sz) => k.prices[sz] || '';
+    const c = (sz) => k.prices[sz] ? fmtPct(costPct(k.kegPrice, k.kegSize, sz, k.prices[sz])) : '';
+    rows.push([
+      k.name, k.distributor, k.kegPrice, k.kegSize,
+      p(9), c(9), p(12), c(12), p(16), c(16), p(25), c(25),
+      k.isHHEligible && k.prices[12] ? fmtPct(hhCostPct(k.kegPrice, k.kegSize, k.prices[12])) : '',
+      bestCostPct(k) !== null ? fmtPct(bestCostPct(k)) : ''
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'tin_roost_keg_pricing.csv';
+  a.click();
+}
+
+// ── NAV ──────────────────────────────────────────────────────────
+function setView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelector(`nav button[onclick="setView('${v}')"]`).classList.add('active');
+  
+  if (v === 'insights') renderInsights();
+  if (v === 'inventory') { populateDistFilter('filterInvDist'); filterInventory(); }
+  if (v === 'pricing') filterTable();
+}
+
+function populateDistFilter(selectId) {
+  const dists = [...new Set(kegs.map(k => k.distributor))].sort();
+  const sel = document.getElementById(selectId);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Distributors</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
+  sel.value = cur;
+}
+
+// ── STORAGE ──────────────────────────────────────────────────────
+function saveToStorage() {
+  try { localStorage.setItem('tinRoostKegs', JSON.stringify(kegs)); } catch(e) {}
+}
+
+// ── TOAST ────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── CLICK OUTSIDE MODAL ──────────────────────────────────────────
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ── INIT ─────────────────────────────────────────────────────────
+populateDistFilter('filterDist');
+populateDistFilter('filterInvDist');
+renderStats();
+renderPricingTable(kegs);
+</script>
+</body>
+</html>
