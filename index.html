@@ -645,9 +645,13 @@ sb.auth.onAuthStateChange(async(event, session) => {
     currentUser = session.user;
     document.getElementById('authWrap').classList.add('hide');
     showLoading('Loading your data…');
-    await loadBizSettings();
-    await loadProducts();
-    await loadLatestAnalysis();
+    try {
+      await loadBizSettings();
+      await loadProducts();
+      await loadLatestAnalysis();
+    } catch(e) {
+      console.error('Load error:', e);
+    }
     hideLoading();
     const hasSettings = bizSettings.name && bizSettings.name.length > 0;
     if(!hasSettings) {
@@ -715,24 +719,30 @@ async function finishOnboard() {
 //  DATABASE
 // ═══════════════════════════════════════════════════
 async function loadBizSettings() {
-  const{data}=await sb.from('biz_settings').select('*').eq('user_id',currentUser.id).single();
-  if(data) bizSettings = { name:data.name||'', type:data.type||'taproom', targetPct:data.target_pct||25, useSpecials:!!data.use_specials };
+  try {
+    const{data,error}=await sb.from('biz_settings').select('*').eq('user_id',currentUser.id).maybeSingle();
+    if(data) bizSettings = { name:data.name||'', type:data.type||'taproom', targetPct:data.target_pct||25, useSpecials:!!data.use_specials };
+  } catch(e) { console.warn('biz_settings not found, using defaults'); }
 }
 async function saveBizSettings() {
-  await sb.from('biz_settings').upsert({
-    user_id:currentUser.id, name:bizSettings.name, type:bizSettings.type,
-    target_pct:bizSettings.targetPct, use_specials:bizSettings.useSpecials
-  },{onConflict:'user_id'});
+  try {
+    await sb.from('biz_settings').upsert({
+      user_id:currentUser.id, name:bizSettings.name, type:bizSettings.type,
+      target_pct:bizSettings.targetPct, use_specials:bizSettings.useSpecials
+    },{onConflict:'user_id'});
+  } catch(e) { console.error('saveBizSettings error:', e); }
 }
 async function loadProducts() {
-  const{data}=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name');
-  products = (data||[]).map(r=>({
-    id:r.id, name:r.name, vendor:r.vendor||'', category:r.category||'draft',
-    containerSize:parseFloat(r.container_size)||0,
-    invoiceCost:parseFloat(r.invoice_cost)||0,
-    pours:r.pours||[], specialPour:r.special_pour||null,
-    specialPrice:r.special_price||null, notes:r.notes||''
-  }));
+  try {
+    const{data}=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name');
+    products = (data||[]).map(r=>({
+      id:r.id, name:r.name, vendor:r.vendor||'', category:r.category||'draft',
+      containerSize:parseFloat(r.container_size)||0,
+      invoiceCost:parseFloat(r.invoice_cost)||0,
+      pours:r.pours||[], specialPour:r.special_pour||null,
+      specialPrice:r.special_price||null, notes:r.notes||''
+    }));
+  } catch(e) { console.warn('products load error:', e); products=[]; }
 }
 async function saveProduct(prod) {
   const payload = {
@@ -756,18 +766,22 @@ async function deleteProductFromDb(id) {
   return !error;
 }
 async function loadLatestAnalysis() {
-  const{data}=await sb.from('sales_uploads').select('*').eq('user_id',currentUser.id).order('uploaded_at',{ascending:false}).limit(1);
-  if(data&&data[0]) {
-    salesData = data[0].sales_data || [];
-    matches = data[0].matches || {};
-    analysis = data[0].analysis || [];
-  }
+  try {
+    const{data}=await sb.from('sales_uploads').select('*').eq('user_id',currentUser.id).order('uploaded_at',{ascending:false}).limit(1);
+    if(data&&data[0]) {
+      salesData = data[0].sales_data || [];
+      matches = data[0].matches || {};
+      analysis = data[0].analysis || [];
+    }
+  } catch(e) { console.warn('sales_uploads load error:', e); }
 }
 async function saveAnalysis() {
-  await sb.from('sales_uploads').insert({
-    user_id:currentUser.id, uploaded_at:new Date().toISOString(),
-    sales_data:salesData, matches, analysis
-  });
+  try {
+    await sb.from('sales_uploads').insert({
+      user_id:currentUser.id, uploaded_at:new Date().toISOString(),
+      sales_data:salesData, matches, analysis
+    });
+  } catch(e) { console.error('saveAnalysis error:', e); showToast('Warning: could not save to cloud — run SQL setup first'); }
 }
 
 // ═══════════════════════════════════════════════════
