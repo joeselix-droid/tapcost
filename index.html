@@ -645,21 +645,29 @@ sb.auth.onAuthStateChange(async(event, session) => {
     currentUser = session.user;
     document.getElementById('authWrap').classList.add('hide');
     showLoading('Loading your data…');
+
+    // Hard 8-second timeout so the spinner can never get stuck
+    const loadTimeout = setTimeout(() => {
+      console.warn('Load timed out - proceeding anyway');
+      hideLoading();
+      enterApp();
+    }, 8000);
+
     try {
+      console.log('Loading biz settings...');
       await loadBizSettings();
+      console.log('Loading products...');
       await loadProducts();
+      console.log('Loading analysis...');
       await loadLatestAnalysis();
+      console.log('All loaded.');
     } catch(e) {
       console.error('Load error:', e);
     }
+
+    clearTimeout(loadTimeout);
     hideLoading();
-    const hasSettings = bizSettings.name && bizSettings.name.length > 0;
-    if(!hasSettings) {
-      document.getElementById('onboardWrap').classList.add('show');
-    } else {
-      document.getElementById('appWrap').classList.add('show');
-      initApp();
-    }
+    enterApp();
   } else {
     currentUser = null;
     document.getElementById('appWrap').classList.remove('show');
@@ -667,6 +675,19 @@ sb.auth.onAuthStateChange(async(event, session) => {
     document.getElementById('authWrap').classList.remove('hide');
   }
 });
+
+function enterApp() {
+  if(document.getElementById('loadingOverlay').classList.contains('show')) hideLoading();
+  if(document.getElementById('appWrap').classList.contains('show')) return;
+  if(document.getElementById('onboardWrap').classList.contains('show')) return;
+  const hasSettings = bizSettings.name && bizSettings.name.length > 0;
+  if(!hasSettings) {
+    document.getElementById('onboardWrap').classList.add('show');
+  } else {
+    document.getElementById('appWrap').classList.add('show');
+    initApp();
+  }
+}
 
 // ═══════════════════════════════════════════════════
 //  ONBOARDING
@@ -744,7 +765,7 @@ async function loadProducts() {
     }));
   } catch(e) { console.warn('products load error:', e); products=[]; }
 }
-async function saveProduct(prod) {
+async function saveProductToDb(prod) {
   const payload = {
     user_id:currentUser.id, name:prod.name, vendor:prod.vendor,
     category:prod.category, container_size:prod.containerSize,
@@ -1141,7 +1162,7 @@ async function saveProduct() {
     notes:document.getElementById('p_notes').value.trim()
   };
   showLoading('Saving…');
-  const saved = await saveProduct(prod);
+  const saved = await saveProductToDb(prod);
   hideLoading();
   if(!saved){return;}
   if(editingProductId) {
