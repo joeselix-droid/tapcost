@@ -727,9 +727,8 @@ async function finishOnboard() {
   const name = document.getElementById('ob_name').value.trim() || 'My Business';
   const target = parseFloat(document.getElementById('ob_target').value) || 25;
   bizSettings = { name, type: obBtype, targetPct: target, useSpecials: obSpecials };
-  showLoading('Saving settings…');
-  await saveBizSettings();
-  hideLoading();
+  // Save in background - don't block the UI waiting for it
+  saveBizSettings().catch(e => console.warn('Settings save failed:', e));
   document.getElementById('onboardWrap').classList.remove('show');
   document.getElementById('appWrap').classList.add('show');
   initApp();
@@ -1161,15 +1160,14 @@ async function saveProduct() {
     specialPrice:parseFloat(document.getElementById('p_spPrice').value)||null,
     notes:document.getElementById('p_notes').value.trim()
   };
-  showLoading('Saving…');
-  const saved = await saveProductToDb(prod);
-  hideLoading();
-  if(!saved){return;}
+  // Update local state immediately — don't block on DB
+  const tempId = editingProductId || ('local_' + Date.now());
+  const prodWithId = {...prod, id: tempId};
   if(editingProductId) {
     const idx = products.findIndex(p=>p.id===editingProductId);
-    products[idx] = {...prod, id:saved.id};
+    if(idx>=0) products[idx] = prodWithId;
   } else {
-    products.push({...prod, id:saved.id});
+    products.push(prodWithId);
   }
   if(analysis.length) runAnalysis();
   closeProductModal();
@@ -1177,12 +1175,16 @@ async function saveProduct() {
   renderDashboard();
   renderSnapCards();
   showToast(editingProductId ? 'Product updated!' : 'Product added!');
+  // Save to DB in background and update the ID if it was new
+  saveProductToDb(prod).then(saved => {
+    if(saved && !editingProductId) {
+      const idx = products.findIndex(p=>p.id===tempId);
+      if(idx>=0) products[idx].id = saved.id;
+    }
+  }).catch(e => console.warn('Product save error:', e));
 }
 async function deleteProduct() {
   if(!confirm('Delete this product?')) return;
-  showLoading('Deleting…');
-  await deleteProductFromDb(editingProductId);
-  hideLoading();
   products = products.filter(p=>p.id!==editingProductId);
   if(analysis.length) { analysis=analysis.filter(a=>a.productId!==editingProductId); }
   closeProductModal();
@@ -1190,6 +1192,8 @@ async function deleteProduct() {
   renderDashboard();
   renderSnapCards();
   showToast('Product deleted');
+  // Delete from DB in background
+  deleteProductFromDb(editingProductId).catch(e => console.warn('Delete error:', e));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1380,9 +1384,8 @@ async function runAndSaveAnalysis() {
   matches = flatMatches;
 
   runAnalysis();
-  showLoading('Saving analysis…');
-  await saveAnalysis();
-  hideLoading();
+  // Save in background
+  saveAnalysis().catch(e => console.warn('Analysis save error:', e));
 
   const matched = Object.keys(matches).filter(k=>matches[k]).length;
   document.getElementById('analysisSummaryText').innerHTML = `Analyzed ${matched} of ${products.length} products against ${salesData.length} sales items.<br>Head to the Dashboard to see your results.`;
